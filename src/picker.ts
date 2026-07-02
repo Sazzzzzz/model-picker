@@ -22,21 +22,36 @@ const modelsUrl = "https://openrouter.ai/api/v1/models";
 let modelsCache: Promise<Model[]> | undefined;
 
 export async function importModel() {
+    const picker = vscode.window.createQuickPick<Item>();
+    picker.title = "Model Picker: Import Model";
+    picker.placeholder = "Loading OpenRouter models…";
+    picker.busy = true;
+    picker.matchOnDescription = true;
+    picker.matchOnDetail = true;
+    picker.show();
+
     try {
-        const selected = await vscode.window.showQuickPick(
-            (await fetchModels()).map(toItem),
-            {
-                title: "Model Picker: Import Model",
-                placeHolder: "Search for a model",
-                matchOnDescription: true,
-                matchOnDetail: true,
-            },
-        );
+        const models = await fetchModels();
+        picker.items = models.map(toItem);
+        picker.placeholder = "Search for a model";
+        picker.busy = false;
+
+        const [selected] = await new Promise<readonly Item[]>((resolve) => {
+            const sub = picker.onDidAccept(() => {
+                sub.dispose();
+                resolve(picker.selectedItems);
+            });
+            picker.onDidHide(() => {
+                sub.dispose();
+                resolve([]);
+            });
+        });
 
         if (selected) {
             await openJson(selected.model);
         }
     } catch (error) {
+        picker.hide();
         vscode.window.showErrorMessage(
             `Model Picker failed: ${error instanceof Error ? error.message : String(error)}`,
         );
@@ -85,45 +100,68 @@ function toItem(model: Model): Item {
 async function openJson(model: Model) {
     const settings = vscode.workspace.getConfiguration("modelPicker");
     const provider = settings.get("defaultProvider", "customendpoint");
-    const config = modelConfig(
-        model,
-        settings.get("defaultBaseUrl", "http://localhost:23333"),
-        provider,
-    );
-    const document = await vscode.workspace.openTextDocument({
-        language: "json",
-        content: `${JSON.stringify(config, null, 4)}\n`,
-    });
+    const baseUrl = settings.get("defaultBaseUrl", "http://localhost:23333");
+    const snippet = buildSnippet(model, baseUrl, provider);
 
-    await vscode.window.showTextDocument(document, { preview: false });
-}
-
-function modelConfig(model: Model, url: string, provider: string) {
-    const efforts = model.reasoning?.supported_efforts?.filter(Boolean) ?? [];
-    const config: Record<string, unknown> = {
-        id:
-            provider.toLowerCase() === "customendpoint"
-                ? `openrouter:${model.id.replaceAll("/", ":")}`
-                : model.id,
-        name: nameOf(model),
-        maxInputTokens: inputTokens(model),
-        maxOutputTokens: outputTokens(model),
-        toolCalling: model.supported_parameters?.includes("tools") ?? false,
-        url,
-        vendor: provider,
-        vision: model.architecture?.modality?.includes("image") ?? false,
-        apiType: "chat-completions",
-    };
-
-    if (model.reasoning?.mandatory) {
-        config.thinking = true;
-    } else if (efforts.length) {
-        config.reasoningEffortFormat = "chat-completions";
-        config.supportsReasoningEffort = efforts;
-        config.thinking = true;
+    const active = vscode.window.activeTextEditor;
+    if (
+        active &&
+        /chatLanguageModels\.json?$/i.test(active.document.fileName)
+    ) {
+        await active.insertSnippet(new vscode.SnippetString(snippet));
+        return;
     }
 
-    return config;
+    const doc = await vscode.workspace.openTextDocument({
+        language: "json",
+        content: "",
+    });
+    const editor = await vscode.window.showTextDocument(doc, {
+        preview: false,
+    });
+    await editor.insertSnippet(new vscode.SnippetString(snippet));
+}
+
+function buildSnippet(model: Model, baseUrl: string, provider: string): string {
+    const id =
+        provider.toLowerCase() === "customendpoint"
+            ? `openrouter:\${1:${model.id.replaceAll("/", ":")}}`
+            : `\${1:${model.id}}`;
+    const name = `\${2:${nameOf(model)}}`;
+    const input = `\${3:${inputTokens(model)}}`;
+    const output = `\${4:${outputTokens(model)}}`;
+    const tools = model.supported_parameters?.includes("tools") ?? false;
+    const hasVision = model.architecture?.modality?.includes("image") ?? false;
+    const efforts = model.reasoning?.supported_efforts?.filter(Boolean) ?? [];
+    const mandatory = model.reasoning?.mandatory === true;
+
+    const lines = [
+        "{",
+        `    "id": "${id}",`,
+        `    "name": "${name}",`,
+        `    "maxInputTokens": ${input},`,
+        `    "maxOutputTokens": ${output},`,
+        `    "toolCalling": \${5:${tools}},`,
+        `    "url": "\${6:${baseUrl}}",`,
+        `    "vendor": "\${7:${provider}}",`,
+        `    "vision": \${8:${hasVision}},`,
+        `    "apiType": "chat-completions"`,
+    ];
+
+    if (mandatory) {
+        lines.push(`,    "thinking": true`);
+    } else if (efforts.length) {
+        const effortList = efforts
+            .map((e, i) => `"\${${9 + i}:${e}}"`)
+            .join(", ");
+        lines.push(`,`);
+        lines.push(`    "reasoningEffortFormat": "chat-completions",`);
+        lines.push(`    "supportsReasoningEffort": [${effortList}],`);
+        lines.push(`    "thinking": true`);
+    }
+
+    lines.push("\n}");
+    return lines.join("\n");
 }
 
 function nameOf(model: Model): string {
