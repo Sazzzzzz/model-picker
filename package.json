@@ -4,7 +4,7 @@
     "description": "Search model capabilities on OpenRouter and generate config for VS Code custom chat models",
     "version": "0.1.0",
     "engines": {
-        "vscode": "^1.104.0"
+        "vscode": "^1.109.0"
     },
     "categories": [
         "Other"
@@ -17,7 +17,7 @@
     },
     "devDependencies": {
         "@types/node": "^22.13.14",
-        "@types/vscode": "^1.104.0",
+        "@types/vscode": "^1.109.0",
         "typescript": "^5.8.2"
     },
     "contributes": {
@@ -25,12 +25,20 @@
             {
                 "command": "modelPicker.importModel",
                 "title": "Import Model"
+            },
+            {
+                "command": "modelPicker.editModelProvider",
+                "title": "Edit Model Provider"
             }
         ],
         "menus": {
             "commandPalette": [
                 {
                     "command": "modelPicker.importModel",
+                    "category": "Model Picker"
+                },
+                {
+                    "command": "modelPicker.editModelProvider",
                     "category": "Model Picker"
                 }
             ]
@@ -40,13 +48,18 @@
             "properties": {
                 "modelPicker.defaultBaseUrl": {
                     "type": "string",
-                    "default": "http://localhost:23333",
+                    "default": "http://localhost",
                     "description": "Default API base URL for the generated model config"
                 },
-                "modelPicker.defaultProvider": {
-                    "type": "string",
-                    "default": "customendpoint",
-                    "description": "Default vendor/provider name for the generated config"
+                "modelPicker.defaultMaxInputTokens": {
+                    "type": "number",
+                    "default": 16000,
+                    "description": "Default maximum input tokens for the generated model config"
+                },
+                "modelPicker.defaultMaxOutputTokens": {
+                    "type": "number",
+                    "default": 128000,
+                    "description": "Default maximum output tokens for the generated model config"
                 }
             }
         }
