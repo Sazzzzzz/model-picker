@@ -20,7 +20,6 @@ type Credential = { apiKey: string; fromConfig: boolean; secretKey: string };
 
 const OPEN_MODELS_FILE = "workbench.action.openLanguageModelsJson";
 const SECRET_REFERENCE = /^\$\{input:chat\.lm\.secret\.[^}]+\}$/;
-const DEFAULT_PROVIDER = "customendpoint";
 
 /** Let the user choose an OpenRouter model and insert its configuration snippet. */
 export async function importModel() {
@@ -49,6 +48,12 @@ export async function editModelProvider(context: vscode.ExtensionContext) {
     try {
         const document = await getModelsDocument();
         const providers = parseProviders(document);
+        if (!providers.length) {
+            vscode.window.showWarningMessage(
+                "No model providers are configured in chatLanguageModels.json. Add a provider first, then try again.",
+            );
+            return;
+        }
         const provider = await selectProvider(providers);
         if (!provider) {
             return;
@@ -150,7 +155,8 @@ function acceptPicker(
 }
 
 function parseProviders(document: vscode.TextDocument): Provider[] {
-    const value = JSON.parse(document.getText()) as unknown;
+    const text = document.getText().trim();
+    const value = text ? (JSON.parse(text) as unknown) : [];
     if (!Array.isArray(value)) {
         throw new Error(
             "chatLanguageModels.json must contain a top-level array.",
@@ -300,7 +306,6 @@ async function openSnippet(model: Model) {
     const snippet = buildSnippet(
         model,
         settings.get("defaultBaseUrl", "http://localhost"),
-        DEFAULT_PROVIDER,
     );
     let editor = vscode.window.activeTextEditor;
     if (!editor || !isModelsFile(editor.document)) {
@@ -315,12 +320,9 @@ async function openSnippet(model: Model) {
     await editor.insertSnippet(new vscode.SnippetString(snippet));
 }
 
-function buildSnippet(model: Model, baseUrl: string, provider: string): string {
+function buildSnippet(model: Model, baseUrl: string): string {
     const { tools, vision, efforts } = capabilities(model);
-    const id =
-        provider.toLowerCase() === "customendpoint"
-            ? `openrouter:\${1:${model.id.replaceAll("/", ":")}}`
-            : `\${1:${model.id}}`;
+    const id = `\${1:${model.id.replaceAll("/", ":")}}`;
     const reasoning = model.reasoning?.mandatory
         ? ['    "thinking": true']
         : efforts.length
@@ -328,7 +330,7 @@ function buildSnippet(model: Model, baseUrl: string, provider: string): string {
             [
                 '    "reasoningEffortFormat": "chat-completions",',
                 `    \"supportsReasoningEffort\": [${efforts
-                    .map((effort, index) => `\"\${${9 + index}:${effort}}\"`)
+                    .map((effort, index) => `\"\${${8 + index}:${effort}}\"`)
                     .join(", ")}],`,
                 '    "thinking": true',
             ]
@@ -341,9 +343,7 @@ function buildSnippet(model: Model, baseUrl: string, provider: string): string {
         `    \"maxInputTokens\": \${4:${inputTokens(model)}},`,
         `    \"maxOutputTokens\": \${5:${outputTokens(model)}},`,
         `    \"toolCalling\": \${6:${tools}},`,
-        `    \"vendor\": \"\${7:${provider}}\",`,
-        `    \"vision\": \${8:${vision}},`,
-        `    \"apiType\": \"chat-completions\"${reasoning.length ? "," : ""}`,
+        `    \"vision\": \${7:${vision}}${reasoning.length ? "," : ""}`,
         ...reasoning,
         "}",
     ].join("\n");
