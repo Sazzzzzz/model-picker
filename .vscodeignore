@@ -1,7 +1,12 @@
 .vscode/**
 .vscode-test/**
 src/**
+test/**
+node_modules/**
+out/**/*.map
 .gitignore
 tsconfig.json
+package-lock.json
+assets/model-picker-icon-source.png
 *.vsix
-node_modules/**
+assets/*.gif

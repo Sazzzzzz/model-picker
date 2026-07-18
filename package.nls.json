@@ -1,0 +1,7 @@
+{
+    "commands.importModel.title": "Import Model",
+    "commands.editModelProvider.title": "Edit Model Provider",
+    "configuration.defaultBaseUrl.description": "Default API base URL used when `importModel`",
+    "configuration.defaultMaxInputTokens.description": "Default `maxInputTokens` for the generated model config, if no metadata is found",
+    "configuration.defaultMaxOutputTokens.description": "Default `maxOutputTokens` for the generated model config, if no metadata is found"
+}

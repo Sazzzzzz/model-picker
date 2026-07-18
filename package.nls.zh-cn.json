@@ -1,0 +1,7 @@
+{
+    "commands.importModel.title": "添加模型",
+    "commands.editModelProvider.title": "编辑模型提供商",
+    "configuration.defaultBaseUrl.description": "导入单个模型配置时的默认 API URL",
+    "configuration.defaultMaxInputTokens.description": "生成模型配置时使用的默认最大输入 Token 数量（maxInputTokens）",
+    "configuration.defaultMaxOutputTokens.description": "生成模型配置时使用的默认最大输出 Token 数量（maxOutputTokens）"
+}

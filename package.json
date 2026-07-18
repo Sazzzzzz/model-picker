@@ -1,14 +1,35 @@
 {
     "name": "model-picker",
     "displayName": "Model Picker",
-    "description": "Search model capabilities on OpenRouter and generate config for VS Code custom chat models",
+    "description": "Discover, manage, and configure custom model providers for GitHub Copilot",
+    "icon": "assets/model-picker-icon.png",
     "version": "0.1.0",
+    "publisher": "Caffein3",
+    "author": {
+        "name": "Caffein3"
+    },
+    "license": "MIT",
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/Sazzzzzz/model-picker"
+    },
+    "keywords": [
+        "copilot",
+        "model",
+        "openrouter",
+        "chat",
+        "ai",
+        "llm",
+        "openai"
+    ],
+    "categories": [
+        "AI",
+        "Chat"
+    ],
+    "markdown": "github",
     "engines": {
         "vscode": "^1.109.0"
     },
-    "categories": [
-        "Other"
-    ],
     "activationEvents": [],
     "main": "./out/extension.js",
     "scripts": {
@@ -24,22 +45,22 @@
         "commands": [
             {
                 "command": "modelPicker.importModel",
-                "title": "Import Model"
+                "title": "%commands.importModel.title%",
+                "category": "Model Picker"
             },
             {
                 "command": "modelPicker.editModelProvider",
-                "title": "Edit Model Provider"
+                "title": "%commands.editModelProvider.title%",
+                "category": "Model Picker"
             }
         ],
         "menus": {
             "commandPalette": [
                 {
-                    "command": "modelPicker.importModel",
-                    "category": "Model Picker"
+                    "command": "modelPicker.importModel"
                 },
                 {
-                    "command": "modelPicker.editModelProvider",
-                    "category": "Model Picker"
+                    "command": "modelPicker.editModelProvider"
                 }
             ]
         },
@@ -49,17 +70,17 @@
                 "modelPicker.defaultBaseUrl": {
                     "type": "string",
                     "default": "http://localhost",
-                    "description": "Default API base URL for the generated model config"
+                    "description": "%configuration.defaultBaseUrl.description%"
                 },
                 "modelPicker.defaultMaxInputTokens": {
                     "type": "number",
                     "default": 16000,
-                    "description": "Default maximum input tokens for the generated model config"
+                    "description": "%configuration.defaultMaxInputTokens.description%"
                 },
                 "modelPicker.defaultMaxOutputTokens": {
                     "type": "number",
                     "default": 128000,
-                    "description": "Default maximum output tokens for the generated model config"
+                    "description": "%configuration.defaultMaxOutputTokens.description%"
                 }
             }
         }
